@@ -6,7 +6,7 @@ pipeline {
         GIT_URL         = 'https://github.com/devsjayanth/Hello-App.git'
         GIT_CRED        = 'github-cred'       
         SONAR_CRED      = 'sonar-cred'        
-        HARBOR_URL      = '10.0.2.247:80'      
+        HARBOR_URL      = '10.0.2.49:80'      
         HARBOR_CRED     = 'harbor-cred'       
         APP_NAME        = 'hello-app'         
         APP_PORT        = '9001'              
@@ -15,7 +15,7 @@ pipeline {
         GITOPS_REPO     = 'https://github.com/devsjayanth/Hello-App-GitOps.git'
         GITOPS_BRANCH   = 'main'
         GITOPS_CRED     = 'github-cred'       
-        MANIFEST_PATH   = 'hello-app-k8s/deployment.yml'
+        MANIFEST_PATH   = 'k8s/'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         IMAGE_LATEST    = "latest"
         
@@ -112,7 +112,7 @@ pipeline {
 
         stage('Approve for Production') {
             steps {
-                input message: 'Deploy to Prod K8S via ArgoCD?', ok: 'Yes, deploy to production'
+                input message: 'Deploy to Prod via ArgoCD?', ok: 'Yes, deploy to production'
             }
         }
 
@@ -124,7 +124,8 @@ pipeline {
                     passwordVariable: 'GIT_PASS'
                 )]) {
                     script {
-                        def repoUrl = GITOPS_REPO.replaceFirst(/^https?:\/\//, "https://${GIT_USER}:${GIT_PASS}@")
+                        def encodedPass = java.net.URLEncoder.encode(GIT_PASS, "UTF-8")
+                        def repoUrl = GITOPS_REPO.replaceFirst(/^https?:\/\//, "https://${GIT_USER}:${encodedPass}@")
                         sh """
                             rm -rf gitops
                             git clone ${repoUrl} gitops
