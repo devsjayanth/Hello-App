@@ -52,7 +52,7 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Docker Build') {
             steps {
                 script {
                     docker.build("${IMAGE_NAME}:${IMAGE_TAG}", "--no-cache --pull .")
@@ -83,7 +83,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Dev Server') {
+        stage('Staging Deploy to Dev-Server') {
             steps {
                 sh """ssh ${DEV_SERVER} '
                     docker pull ${IMAGE_NAME}:latest
