@@ -15,7 +15,7 @@ pipeline {
         GITOPS_REPO     = 'https://github.com/devsjayanth/Hello-App-GitOps.git'
         GITOPS_BRANCH   = 'main'
         GITOPS_CRED     = 'github-cred'       
-        MANIFEST_PATH   = 'hello-app-k8s/'
+        MANIFEST_PATH   = 'hello-app-k8s/deployment.yml'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         IMAGE_LATEST    = "latest"
         
