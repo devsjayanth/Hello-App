@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: hello-app
+    restart: unless-stopped
+    init: true
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+      - FORWARDED_ALLOW_IPS=127.0.0.1

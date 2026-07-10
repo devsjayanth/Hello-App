@@ -1,0 +1,2 @@
+version=7.4
+message=🚀 This app is built with Starlette & Uvicorn

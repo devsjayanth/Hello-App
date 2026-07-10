@@ -1,0 +1,980 @@
+{% set url_host = request.url.hostname %}
+{% if url_host in ('0.0.0.0', 'localhost', '127.0.0.1') or request.url.scheme == 'https' %}
+{% set full_url = (request.url.replace(query='') | string()).rstrip('/') ~ '/' %}
+{% else %}
+{% set full_url = (request.url.replace(query='', scheme='https') | string()).rstrip('/') ~ '/' %}
+{% endif %}
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="{{ full_url ~ 'static/favicon.svg' }}">
+<meta property="og:url" content="{{ full_url }}" />
+<meta property="og:title" content="Hello App"/>
+<meta property="og:description" content="Example container web service." />
+<meta property="og:image" content="{{ full_url ~ 'static/preview.png' }}" />
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:title" content="Hello App" />
+<meta property="twitter:domain" content="{{ request.url.hostname }}" />
+<meta property="twitter:description" content="Example container web service." />
+<title>Hello App</title>
+<style>
+@font-face {
+  font-family: 'LG Yoyo';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/static/fonts/LG_Yoyo_Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/static/fonts/open-sans-v18-latin-regular.woff2') format('woff2'),
+       url('/static/fonts/open-sans-v18-latin-regular.woff') format('woff');
+}
+body {
+  height: 100%;
+  width: 100%;
+  text-align: center;
+  background: url("{{ full_url }}static/background.svg") #161E2D no-repeat fixed;
+  background-size: cover;
+  background-position: center;
+  color: #FFFFFF;
+  overscroll-behavior: none;
+}
+html {
+  height: 100%;
+}
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-top: clamp(120px, 4vh, 180px);
+  box-sizing: border-box;
+}
+.avatar-card {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  cursor: pointer;
+  position: relative;
+}
+.hostname-corner {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 24px;
+  font-weight: bold;
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  letter-spacing: 0;
+  line-height: 1;
+  z-index: 100;
+  pointer-events: none;
+  user-select: none;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  border-radius: 999px;
+  margin: 6px 0;
+}
+.stats-pill {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-size: 24px;
+  font-weight: bold;
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  letter-spacing: 0;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 10001;
+  user-select: none;
+  pointer-events: auto;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.stats-pill .stat-sep {
+  color: rgba(255, 255, 255, 0.2);
+}
+.icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+  display: inline-block;
+}
+.glass {
+  background: rgba(255, 255, 255, 0.005);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  will-change: transform;
+}
+.stats-pill .stat-on {
+  color: #ff6b6b;
+}
+.burn-wrapper {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10001;
+  user-select: none;
+}
+.burn-btn {
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-size: 24px;
+  font-weight: bold;
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  letter-spacing: 0;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s, color 0.3s;
+}
+.burn-btn:hover {
+  background: rgba(255, 70, 70, 0.08);
+  border-color: rgba(255, 70, 70, 0.3);
+  color: #ff6b6b;
+}
+.burn-btn.active {
+  border-color: rgba(255, 70, 70, 0.5);
+  box-shadow: 0 8px 32px rgba(255, 70, 70, 0.15);
+  color: #ff6b6b;
+}
+.burn-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 240px;
+  max-width: calc(100vw - 32px);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.005);
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 14px;
+  pointer-events: auto;
+  z-index: 10002;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.burn-dropdown .toggle-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 24px;
+  font-weight: bold;
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  letter-spacing: 0;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.005);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.burn-dropdown .toggle-pill:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.burn-dropdown .toggle-pill.active {
+  color: #ff6b6b;
+  border-color: rgba(255, 70, 70, 0.3);
+  box-shadow: 0 0 12px rgba(255, 70, 70, 0.1);
+  background: rgba(255, 70, 70, 0.08);
+}
+.toggle-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.2s, box-shadow 0.2s;
+  pointer-events: none;
+}
+.toggle-pill.active .toggle-indicator {
+  background: #ff6b6b;
+  box-shadow: 0 0 8px rgba(255, 70, 70, 0.6);
+}
+h1, h2, .version {
+  user-select: none;
+  -webkit-user-select: none;
+}
+h2 {
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 0;
+  line-height: 1;
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  margin: 0;
+}
+h1 {
+  font-size: 52px;
+  font-weight: bold;
+  letter-spacing: 0;
+  line-height: 1;
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  margin: 0;
+}
+.version {
+  font-size: 30px;
+  font-weight: bold;
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  margin: 0;
+  line-height: 1;
+}
+.message-text {
+  display: block;
+  font-size: clamp(12px, 4vw, 24px);
+  font-family: "LG Yoyo", "Open Sans", sans-serif;
+  font-weight: bold;
+  line-height: 30px;
+  max-width: min(90vw, 800px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 6px 0;
+  user-select: none;
+}
+html, body {
+  font-family: "Open Sans", sans-serif;
+  margin:0;
+  padding:0;
+}
+.avatar {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+@media only screen and (max-width: 875px) {
+  body { background: url("{{ full_url }}static/background-mobile.svg") #161E2D no-repeat fixed; background-size: cover; background-position: center; }
+  .avatar-card { width: 130px; height: 130px; }
+  .avatar { width: 110px; height: 110px; }
+  .stats-pill { font-size: 18px; padding: 6px 14px; gap: 8px; }
+  .burn-btn { font-size: 18px; padding: 6px 14px; }
+  .burn-dropdown .toggle-pill { font-size: 18px; }
+  .hostname-corner { font-size: 18px; padding: 6px 14px; }
+}
+@media only screen and (max-width: 600px) {
+  .hostname-corner { display: none; }
+  .stats-pill { font-size: 14px; padding: 4px 10px; gap: 6px; }
+  .burn-btn { font-size: 14px; padding: 4px 10px; }
+  .burn-dropdown .toggle-pill { font-size: 16px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 16px; }
+  .version { font-size: 18px; }
+  .pill { padding: 8px 16px; }
+}
+</style>
+</head>
+<body>
+  <div class="hostname-corner glass"><svg viewBox="0 0 16 16" class="icon" style="margin-right:6px"><path d="m3 0c-1.660156 0-3 1.339844-3 3v7c0 1.660156 1.339844 3 3 3h10c1.660156 0 3-1.339844 3-3v-7c0-1.660156-1.339844-3-3-3zm0 2h10c0.554688 0 1 0.445312 1 1v7c0 0.554688-0.445312 1-1 1h-10c-0.554688 0-1-0.445312-1-1v-7c0-0.554688 0.445312-1 1-1zm2 12c-1.105469 0-2 0.894531-2 2h10c0-1.105469-0.894531-2-2-2z" fill="currentColor"/></svg>{{ hostname }}</div>
+  <div class="stats-pill glass" id="stats-pill">
+    <span id="stat-cpu"><svg viewBox="0 0 16 16" class="icon"><path d="m 16 9.972656 c 0 -2.855468 -1.515625 -5.539062 -4 -6.972656 c -2.472656 -1.429688 -5.527344 -1.429688 -8 0 c -2.484375 1.433594 -4 4.117188 -4 6.972656 c 0 0.550782 0.449219 1 1 1 h 1 c 0.550781 0 1 -0.449218 1 -1 c -0.03125 -0.433594 -0.335938 -0.796875 -0.761719 -0.898437 c 0.285157 -1.78125 1.1875 -3.433594 2.761719 -4.339844 c 1.859375 -1.074219 4.140625 -1.074219 6 0 c 1.574219 0.90625 2.476562 2.558594 2.761719 4.339844 c -0.425781 0.101562 -0.730469 0.464843 -0.761719 0.898437 c 0 0.550782 0.449219 1 1 1 h 1 c 0.550781 0 1 -0.449218 1 -1 z" fill="currentColor"/><path d="m 11 5.667969 l -4.480469 4.972656 c -0.007812 0.007813 -0.015625 0.015625 -0.023437 0.027344 c -0.125 0.136719 -0.226563 0.292969 -0.308594 0.460937 c -0.472656 1 -0.046875 2.191406 0.949219 2.667969 c 0.996093 0.472656 2.191406 0.046875 2.664062 -0.949219 c 0.070313 -0.148437 0.121094 -0.304687 0.152344 -0.464844 h 0.003906 l 0.007813 -0.054687 l 0.007812 -0.042969 c 0.003906 -0.011718 0.003906 -0.023437 0.003906 -0.035156 z" fill="currentColor"/></svg><span id="stat-cpu-val">--</span></span>
+    <span class="stat-sep">|</span>
+    <span id="stat-mem"><svg viewBox="0 0 16 16" class="icon"><path d="m 5 1 c -1.644531 0 -3 1.355469 -3 3 v 8 c 0 1.644531 1.355469 3 3 3 h 7 c 1.644531 0 3 -1.355469 3 -3 v -8 c 0 -0.265625 -0.105469 -0.519531 -0.292969 -0.707031 l -2 -2 c -0.1875 -0.1875 -0.441406 -0.292969 -0.707031 -0.292969 z m 0 2 h 6.585938 l 1.414062 1.414062 v 7.585938 c 0 0.570312 -0.429688 1 -1 1 h -7 c -0.570312 0 -1 -0.429688 -1 -1 v -8 c 0 -0.570312 0.429688 -1 1 -1 z m 0.5 1 c -0.277344 0 -0.5 0.222656 -0.5 0.5 v 4 c 0 0.277344 0.222656 0.5 0.5 0.5 h 2 c 0.277344 0 0.5 -0.222656 0.5 -0.5 v -3.5 h 1 v 3.5 c 0 0.277344 0.222656 0.5 0.5 0.5 h 2 c 0.277344 0 0.5 -0.222656 0.5 -0.5 v -3 c 0 -0.277344 -0.222656 -0.5 -0.5 -0.5 s -0.5 0.222656 -0.5 0.5 v 2.5 h -1 v -3.5 c 0 -0.277344 -0.222656 -0.5 -0.5 -0.5 h -2 c -0.277344 0 -0.5 0.222656 -0.5 0.5 v 3.5 h -1 v -3.5 c 0 -0.277344 -0.222656 -0.5 -0.5 -0.5 z m 0 0" fill="currentColor"/></svg><span id="stat-mem-val">--</span></span>
+    <span class="stat-sep">|</span>
+    <span id="stat-url"><svg viewBox="0 0 16 16" class="icon"><path d="m6 0.015625c-0.554688 0-1 0.445313-1 1v3c0 0.554687 0.445312 1 1 1h1v2h-7v2h2v2h-1c-0.554688 0-1 0.445313-1 1v3c0 0.554687 0.445312 1 1 1h4c0.554688 0 1-0.445313 1-1v-3c0-0.554687-0.445312-1-1-1h-1v-2h8v2h-1c-0.554688 0-1 0.445313-1 1v3c0 0.554687 0.445312 1 1 1h4c0.554688 0 1-0.445313 1-1v-3c0-0.554687-0.445312-1-1-1h-1v-2h2v-2h-7v-2h1c0.554688 0 1-0.445313 1-1v-3c0-0.554687-0.445312-1-1-1z" fill="currentColor"/></svg><span id="stat-url-val">--</span></span>
+  </div>
+  <div class="burn-wrapper" id="burn-wrapper">
+    <div class="burn-btn glass" id="burn-btn"><svg viewBox="0 0 16 16" class="icon" style="margin-right:4px"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M8 1v2.5M8 12.5v2.5M1 8h2.5M12.5 8h2.5M5.9 5.9L3.5 3.5M10.1 5.9L12.5 3.5M10.1 10.1L12.5 12.5M5.9 10.1L3.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Burn 🔥</div>
+    <div class="burn-dropdown" id="burn-dropdown" style="display:none">
+    <div class="toggle-pill" data-stress="cpu"><span><svg viewBox="0 0 16 16" class="icon"><path d="m 16 9.972656 c 0 -2.855468 -1.515625 -5.539062 -4 -6.972656 c -2.472656 -1.429688 -5.527344 -1.429688 -8 0 c -2.484375 1.433594 -4 4.117188 -4 6.972656 c 0 0.550782 0.449219 1 1 1 h 1 c 0.550781 0 1 -0.449218 1 -1 c -0.03125 -0.433594 -0.335938 -0.796875 -0.761719 -0.898437 c 0.285157 -1.78125 1.1875 -3.433594 2.761719 -4.339844 c 1.859375 -1.074219 4.140625 -1.074219 6 0 c 1.574219 0.90625 2.476562 2.558594 2.761719 4.339844 c -0.425781 0.101562 -0.730469 0.464843 -0.761719 0.898437 c 0 0.550782 0.449219 1 1 1 h 1 c 0.550781 0 1 -0.449218 1 -1 z" fill="currentColor"/><path d="m 11 5.667969 l -4.480469 4.972656 c -0.007812 0.007813 -0.015625 0.015625 -0.023437 0.027344 c -0.125 0.136719 -0.226563 0.292969 -0.308594 0.460937 c -0.472656 1 -0.046875 2.191406 0.949219 2.667969 c 0.996093 0.472656 2.191406 0.046875 2.664062 -0.949219 c 0.070313 -0.148437 0.121094 -0.304687 0.152344 -0.464844 h 0.003906 l 0.007813 -0.054687 l 0.007812 -0.042969 c 0.003906 -0.011718 0.003906 -0.023437 0.003906 -0.035156 z" fill="currentColor"/></svg> CPU</span><span class="toggle-indicator" id="ind-cpu"></span></div>
+    <div class="toggle-pill" data-stress="memory"><span><svg viewBox="0 0 16 16" class="icon"><path d="m 5 1 c -1.644531 0 -3 1.355469 -3 3 v 8 c 0 1.644531 1.355469 3 3 3 h 7 c 1.644531 0 3 -1.355469 3 -3 v -8 c 0 -0.265625 -0.105469 -0.519531 -0.292969 -0.707031 l -2 -2 c -0.1875 -0.1875 -0.441406 -0.292969 -0.707031 -0.292969 z m 0 2 h 6.585938 l 1.414062 1.414062 v 7.585938 c 0 0.570312 -0.429688 1 -1 1 h -7 c -0.570312 0 -1 -0.429688 -1 -1 v -8 c 0 -0.570312 0.429688 -1 1 -1 z m 0.5 1 c -0.277344 0 -0.5 0.222656 -0.5 0.5 v 4 c 0 0.277344 0.222656 0.5 0.5 0.5 h 2 c 0.277344 0 0.5 -0.222656 0.5 -0.5 v -3.5 h 1 v 3.5 c 0 0.277344 0.222656 0.5 0.5 0.5 h 2 c 0.277344 0 0.5 -0.222656 0.5 -0.5 v -3 c 0 -0.277344 -0.222656 -0.5 -0.5 -0.5 s -0.5 0.222656 -0.5 0.5 v 2.5 h -1 v -3.5 c 0 -0.277344 -0.222656 -0.5 -0.5 -0.5 h -2 c -0.277344 0 -0.5 0.222656 -0.5 0.5 v 3.5 h -1 v -3.5 c 0 -0.277344 -0.222656 -0.5 -0.5 -0.5 z m 0 0" fill="currentColor"/></svg> RAM</span><span class="toggle-indicator" id="ind-mem"></span></div>
+    <div class="toggle-pill" data-stress="url"><span><svg viewBox="0 0 16 16" class="icon"><path d="m6 .016c-.555 0-1 .445-1 1v3c0 .555.445 1 1 1h1v2h-7v2h2v2h-1c-.555 0-1 .445-1 1v3c0 .555.445 1 1 1h4c.555 0 1-.445 1-1v-3c0-.555-.445-1-1-1h-1v-2h8v2h-1c-.555 0-1 .445-1 1v3c0 .555.445 1 1 1h4c.555 0 1-.445 1-1v-3c0-.555-.445-1-1-1h-1v-2h2v-2h-7v-2h1c.555 0 1-.445 1-1v-3c0-.555-.445-1-1-1z" fill="currentColor"/></svg> URL</span><span class="toggle-indicator" id="ind-url"></span></div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="avatar-card glass" id="avatar-card"><div class="avatar" role="img" aria-label="Randomly generated avatar">{{ avatar_svg | safe }}</div></div>
+    <div class="pill glass"><h1>Hello! 👋 And we're live! 🛰️</h1></div>
+    <div class="pill glass"><h2>Congratulations 🎉, your app has successfully deployed.</h2></div>
+    <div class="pill glass"><div class="version">🏷️ Version: {{ version }}</div></div>
+    <div class="message-text">{{ message }}</div>
+  </div>
+<script>
+(function(){
+  const c = document.createElement('canvas');
+  c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;pointer-events:none;';
+  document.body.appendChild(c);
+  const ctx = c.getContext('2d');
+
+  let _platformsValid = false;
+  let _cachedPlatforms = [];
+
+  function resize(){
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+    _platformsValid = false;
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('scroll', function(){ _platformsValid = false; });
+
+  function getPlatforms(){
+    if(!_platformsValid){
+      const platforms = [];
+      document.querySelectorAll('.pill').forEach(function(el, idx){
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) platforms.push({left: r.left, right: r.right, top: r.top, bottom: r.bottom, height: r.height, idx: idx});
+      });
+      platforms.push({left: 0, right: window.innerWidth, top: window.innerHeight - 6, bottom: window.innerHeight, idx: -1});
+      _cachedPlatforms = platforms;
+      _platformsValid = true;
+    }
+    return _cachedPlatforms;
+  }
+
+  function groundY(a){ return a.y + a.size/2; }
+
+  const meowAudio = new Audio("{{ full_url }}static/meow.mp3");
+  meowAudio.volume = 0.5;
+  function playMeow(){
+    try {
+      meowAudio.currentTime = 0;
+      meowAudio.play().catch(function(){});
+    } catch(e){}
+  }
+
+  function handleCatTap(clientX, clientY){
+    for(let i = 0; i < cats.length; i++){
+      const cat = cats[i];
+      const dx = clientX - cat.x;
+      const dy = clientY - (cat.y + cat.size/4);
+      if(dx*dx + dy*dy < cat.size*cat.size*0.8){
+        playMeow();
+        if(cat.state === 'sleeping'){
+          cat.state = 'stretching';
+          cat.stateTimer = 1;
+          if(sleepCount > 0) sleepCount--;
+        }
+        break;
+      }
+    }
+  }
+
+  document.addEventListener('click', function(e){
+    handleCatTap(e.clientX, e.clientY);
+  });
+
+  document.addEventListener('touchstart', function(e){
+    const touch = e.touches[0];
+    if (touch) handleCatTap(touch.clientX, touch.clientY);
+  }, {passive: true});
+
+  const CAT_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#e67e22','#1abc9c',
+    '#ff7979','#badc58','#f6e58d','#7ed6df','#e056fd','#686de0','#30336b',
+    '#95afc0','#535c68','#6ab04c','#eb4d4b','#f9ca24','#be2edd','#22a6b3'];
+  const FUR_COLORS = ['#f5deb3','#d4a574','#a0845c','#808080','#e8d5b7','#c0a080','#654321'];
+
+  function Cat(color, furColor){
+    this.x = 0; this.y = -40;
+    this.vx = 0; this.vy = 0;
+    this.color = color; this.furColor = furColor;
+    this.size = 36;
+    this.dir = 1;
+    this.state = 'falling';
+    this.stateTimer = 1 + Math.random();
+    this.frame = 0; this.frameTime = 0;
+    this.walkSpeed = 25 + Math.random() * 20;
+    this.tailPhase = Math.random() * 10;
+    this.onPlatform = null;
+  }
+
+  Cat.prototype.update = function(dt, platforms, cats){
+    this.vy += 550 * dt;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.tailPhase += dt * 3;
+
+    this.onPlatform = null;
+    for(let i = 0; i < platforms.length; i++){
+      const p = platforms[i];
+      const gy = groundY(this);
+      if(this.vy >= 0 &&
+         this.x + this.size/3 > p.left && this.x - this.size/3 < p.right &&
+         gy >= p.top && gy <= p.top + 10){
+        this.y = p.top - this.size/2;
+        this.vy = 0;
+        this.onPlatform = p;
+        break;
+      }
+    }
+
+    if (!this.onPlatform && this.y + this.size > window.innerHeight) {
+      const ground = platforms[platforms.length - 1];
+      this.y = ground.top - this.size / 2;
+      this.vy = 0;
+      this.onPlatform = ground;
+    }
+
+    if(this.onPlatform && this.onPlatform.idx !== -1){
+      const cr = this.onPlatform.height / 2;
+      if(this.x < this.onPlatform.left + cr || this.x > this.onPlatform.right - cr){
+        this.onPlatform = null;
+        if(this.vy >= 0){ this.vy = 30; this.state = 'jumping'; this.stateTimer = 0.4; }
+      }
+    }
+
+    if(this.onPlatform){
+      for(let i = 0; i < cats.length; i++){
+        const o = cats[i];
+        if(o === this) continue;
+        const dx = this.x - o.x;
+        const d = Math.abs(dx);
+        const sameGround = Math.abs(groundY(this) - groundY(o)) < 15;
+        if(d < 50 && sameGround && this.state === 'walking' && dx * this.dir > 0){
+          this.vy = -300 - Math.random() * 60;
+          this.vx = this.dir * this.walkSpeed * 2;
+          this.state = 'jumping'; this.stateTimer = 0.3; this.onPlatform = null;
+          break;
+        }
+        if(d < 30 && sameGround){
+          this.vx = dx > 0 ? this.walkSpeed : -this.walkSpeed;
+          break;
+        }
+      }
+
+      if(this.x - this.size/3 < 0){
+        this.dir = 1; this.vx = this.dir * this.walkSpeed;
+      } else if(this.x + this.size/3 > window.innerWidth){
+        this.dir = -1; this.vx = this.dir * this.walkSpeed;
+      }
+
+      if(this.state === 'sleeping'){
+        this.vx = 0;
+        this.stateTimer -= dt;
+        if(this.stateTimer <= 0){
+          this.state = 'stretching';
+          this.stateTimer = 1;
+          if(sleepCount > 0) sleepCount--;
+        }
+      } else {
+        this.stateTimer -= dt;
+        if(this.stateTimer <= 0){
+          const r = Math.random();
+          if(r < 0.35){
+            this.state = 'walking'; this.vx = this.dir * this.walkSpeed; this.stateTimer = 0.5 + Math.random() * 1.2;
+          } else if(r < 0.5){
+            this.dir *= -1; this.vx = 0; this.state = 'idle'; this.stateTimer = 0.2 + Math.random() * 0.5;
+          } else if(r < 0.6){
+            this.vx = 0; this.state = 'idle'; this.stateTimer = 0.3 + Math.random() * 0.8;
+          } else if(r < 0.7){
+            this.vx = 0; this.state = 'sitting'; this.stateTimer = 1 + Math.random() * 2;
+          } else if(r < 0.78){
+            this.vx = 0; this.state = 'grooming'; this.stateTimer = 1 + Math.random() * 2;
+          } else if(r < 0.85){
+            this.vx = 0; this.state = 'stretching'; this.stateTimer = 0.8 + Math.random() * 1;
+          } else if(r < 0.92 && sleepCount < 3){
+            this.vx = 0; this.state = 'sleeping'; this.stateTimer = 20 + Math.random() * 10;
+            sleepCount++;
+          } else if(r < 0.98){
+            this.vy = -350 - Math.random() * 100;
+            this.vx = (Math.random() < 0.5 ? -1 : 1) * this.walkSpeed * 0.6;
+            this.state = 'jumping'; this.stateTimer = 0.3; this.onPlatform = null;
+          } else if(r < 0.998){
+            this.vy = -420 - Math.random() * 80;
+            this.vx = this.dir * this.walkSpeed * 1.5;
+            this.state = 'jumping'; this.stateTimer = 0.4; this.onPlatform = null;
+          } else {
+            this.dir *= -1; this.vx = this.dir * this.walkSpeed; this.state = 'walking'; this.stateTimer = 0.5 + Math.random() * 0.8;
+          }
+        }
+      }
+    } else {
+      if(this.vy < 0) this.state = 'jumping';
+      else this.state = 'falling';
+    }
+
+    const animSpeed = this.state === 'walking' ? 0.08 : this.state === 'jumping' ? 0.15 : this.state === 'sleeping' ? 1 : this.state === 'grooming' ? 0.3 : 0.4;
+    this.frameTime += dt;
+    if(this.frameTime > animSpeed){
+      this.frame = (this.frame + 1) % (this.state === 'walking' ? 4 : 2);
+      this.frameTime = 0;
+    }
+  };
+
+  Cat.prototype.draw = function(ctx){
+    const s = this.size;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    if(this.dir < 0) ctx.scale(-1, 1);
+
+    const walkPhase = this.state === 'walking' ? Math.sin(this.frame * Math.PI / 2) : 0;
+    const isSitting = this.state === 'sitting';
+    const isGrooming = this.state === 'grooming';
+    const isStretching = this.state === 'stretching';
+
+    const bodyY = isSitting ? s * 0.05 : 0;
+    const gnd = s/2;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.beginPath();
+    ctx.ellipse(0, gnd + 2, s * 0.5, s * 0.04, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if(this.state === 'sleeping'){
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath();
+      ctx.ellipse(0, -s * 0.05, s * 0.38, s * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = this.furColor;
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(-s * 0.05, -s * 0.1, s * 0.35, -0.5, Math.PI * 1.2);
+      ctx.stroke();
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath();
+      ctx.arc(s * 0.3, -s * 0.15, s * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#2d2d2d';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(s * 0.26, -s * 0.16, s * 0.025, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(s * 0.34, -s * 0.16, s * 0.025, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath(); ctx.moveTo(s * 0.2, -s * 0.28);
+      ctx.lineTo(s * 0.22, -s * 0.42);
+      ctx.lineTo(s * 0.32, -s * 0.3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = this.color; ctx.globalAlpha = 0.4;
+      ctx.beginPath(); ctx.moveTo(s * 0.22, -s * 0.29);
+      ctx.lineTo(s * 0.225, -s * 0.38);
+      ctx.lineTo(s * 0.29, -s * 0.3); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = Math.round(s * 0.35) + 'px sans-serif';
+      ctx.fillText('z', s * 0.42, -s * 0.42);
+      ctx.fillText('z', s * 0.5, -s * 0.6);
+      ctx.restore();
+      return;
+    }
+
+    if(this.state === 'jumping'){
+      const jumpY = -s * 0.1;
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath();
+      ctx.ellipse(0, jumpY, s * 0.4, s * 0.22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = 0.1;
+      ctx.fillRect(-s * 0.04, jumpY - s * 0.12, s * 0.08, s * 0.24);
+      ctx.fillRect(-s * 0.25, jumpY - s * 0.1, s * 0.06, s * 0.2);
+      ctx.fillRect(s * 0.18, jumpY - s * 0.1, s * 0.06, s * 0.2);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = this.furColor;
+      ctx.lineWidth = s * 0.07;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.35, jumpY);
+      ctx.quadraticCurveTo(-s * 0.45, -s * 0.35, -s * 0.35, -s * 0.5);
+      ctx.stroke();
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.arc(-s * 0.35, -s * 0.5, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = this.furColor;
+      ctx.lineWidth = s * 0.06;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(s * 0.2, jumpY + s * 0.1); ctx.lineTo(s * 0.28, jumpY + s * 0.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s * 0.25, jumpY + s * 0.1); ctx.lineTo(s * 0.18, jumpY + s * 0.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s * 0.2, jumpY + s * 0.1); ctx.lineTo(-s * 0.25, jumpY + s * 0.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s * 0.25, jumpY + s * 0.1); ctx.lineTo(-s * 0.18, jumpY + s * 0.15); ctx.stroke();
+      const pw = s*0.04, ph = s*0.025;
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath(); ctx.ellipse(s * 0.28, jumpY + s * 0.17, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 0.18, jumpY + s * 0.17, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 0.25, jumpY + s * 0.17, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 0.18, jumpY + s * 0.17, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+      const hx = s * 0.38;
+      const hy = jumpY - s * 0.06;
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath(); ctx.arc(hx, hy, s * 0.24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath(); ctx.moveTo(hx - s * 0.1, hy - s * 0.16);
+      ctx.lineTo(hx - s * 0.06, hy - s * 0.38);
+      ctx.lineTo(hx + s * 0.04, hy - s * 0.17); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx + s * 0.1, hy - s * 0.16);
+      ctx.lineTo(hx + s * 0.06, hy - s * 0.38);
+      ctx.lineTo(hx + s * 0.22, hy - s * 0.17); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = this.color; ctx.globalAlpha = 0.4;
+      ctx.beginPath(); ctx.moveTo(hx - s * 0.07, hy - s * 0.18);
+      ctx.lineTo(hx - s * 0.055, hy - s * 0.33);
+      ctx.lineTo(hx, hy - s * 0.18); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx + s * 0.07, hy - s * 0.18);
+      ctx.lineTo(hx + s * 0.055, hy - s * 0.33);
+      ctx.lineTo(hx + s * 0.16, hy - s * 0.18); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#2d2d2d';
+      ctx.beginPath(); ctx.ellipse(hx - s * 0.065, hy - s * 0.02, s * 0.035, s * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(hx + s * 0.065, hy - s * 0.02, s * 0.035, s * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.ellipse(hx - s * 0.065, hy - s * 0.02, s * 0.012, s * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(hx + s * 0.065, hy - s * 0.02, s * 0.012, s * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(hx - s * 0.05, hy - s * 0.04, s * 0.012, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx + s * 0.08, hy - s * 0.04, s * 0.012, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ff8a8a';
+      ctx.beginPath(); ctx.moveTo(hx - s * 0.02, hy + s * 0.04);
+      ctx.lineTo(hx, hy + s * 0.07);
+      ctx.lineTo(hx + s * 0.02, hy + s * 0.04);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    ctx.strokeStyle = this.furColor;
+    ctx.lineWidth = s * 0.08;
+    ctx.lineCap = 'round';
+    const tw = isSitting ? 0.3 : (isStretching ? 0.6 : 1);
+    const tcurl = Math.sin(this.tailPhase * 0.8) * s * 0.08 * tw;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.35, bodyY);
+    ctx.quadraticCurveTo(-s * 0.5, -s * 0.2 * tw, -s * 0.4 + tcurl, -s * 0.35 * tw + tcurl);
+    ctx.stroke();
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(-s * 0.4 + tcurl, -s * 0.35 * tw + tcurl, s * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    const bodyH = isSitting ? s * 0.32 : (isStretching ? s * 0.24 : s * 0.3);
+    const bodyW = isStretching ? s * 0.5 : (isSitting ? s * 0.35 : s * 0.4);
+    const bodyOffX = isStretching ? s * 0.05 : 0;
+    ctx.fillStyle = this.furColor;
+    ctx.beginPath();
+    ctx.ellipse(bodyOffX, bodyY, bodyW, bodyH, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if(!isGrooming){
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = 0.1;
+      ctx.fillRect(-s * 0.04, bodyY - s * 0.16, s * 0.08, s * 0.32);
+      ctx.fillRect(-s * 0.25, bodyY - s * 0.14, s * 0.06, s * 0.28);
+      ctx.fillRect(s * 0.18, bodyY - s * 0.14, s * 0.06, s * 0.28);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.lineCap = 'round';
+    ctx.lineWidth = s * 0.07;
+    ctx.strokeStyle = this.furColor;
+    const legBend = walkPhase * s * 0.05;
+    const pawY = gnd - s * 0.08;
+    const pawDY = Math.abs(legBend) * 0.2;
+
+    if(isSitting){
+      for(let xi = -1; xi <= 1; xi += 2){
+        ctx.beginPath();
+        ctx.moveTo(s * xi * 0.15, bodyY + s * 0.05);
+        ctx.lineTo(s * xi * 0.15, gnd - s * 0.08);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(s * xi * 0.21, bodyY + s * 0.05);
+        ctx.lineTo(s * xi * 0.21, gnd - s * 0.08);
+        ctx.stroke();
+      }
+    } else if(isStretching){
+      ctx.beginPath(); ctx.moveTo(s * 0.3, bodyY); ctx.lineTo(s * 0.42, gnd - s * 0.08); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s * 0.35, bodyY); ctx.lineTo(s * 0.47, gnd - s * 0.08); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s * 0.25, bodyY); ctx.lineTo(-s * 0.25, gnd - s * 0.08); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s * 0.32, bodyY); ctx.lineTo(-s * 0.32, gnd - s * 0.08); ctx.stroke();
+    } else {
+      const flX = s*0.24 + legBend; const flY = pawY + pawDY;
+      const frX = s*0.24 - legBend; const frY = pawY - pawDY;
+      const blX = -s*0.24 + legBend; const blY = pawY + pawDY;
+      const brX = -s*0.24 - legBend; const brY = pawY - pawDY;
+
+      ctx.beginPath(); ctx.moveTo(s*0.27, bodyY + s*0.06); ctx.lineTo(flX, flY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s*0.21, bodyY + s*0.06); ctx.lineTo(frX, frY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*0.21, bodyY + s*0.06); ctx.lineTo(blX, blY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*0.27, bodyY + s*0.06); ctx.lineTo(brX, brY); ctx.stroke();
+
+      const pw = s*0.04, ph = s*0.02;
+      ctx.fillStyle = this.furColor;
+      ctx.beginPath(); ctx.ellipse(flX, flY + ph, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(frX, frY + ph, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(blX, blY + ph, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(brX, brY + ph, pw, ph, 0, 0, Math.PI*2); ctx.fill();
+    }
+
+    const headX = s * 0.38;
+    let headY = isStretching ? -s * 0.05 : (isSitting ? -s * 0.06 : -s * 0.06);
+    const headR = s * 0.26;
+    if(isGrooming){
+      headY = s * 0.02;
+      ctx.strokeStyle = this.furColor;
+      ctx.lineWidth = s * 0.06;
+      ctx.beginPath(); ctx.moveTo(s * 0.1, bodyY + s * 0.05); ctx.lineTo(s * 0.15, headY - s * 0.05); ctx.stroke();
+    }
+
+    ctx.fillStyle = this.furColor;
+    ctx.beginPath(); ctx.arc(headX, headY, headR, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = this.furColor;
+    ctx.beginPath(); ctx.moveTo(headX - s * 0.12, headY - s * 0.18);
+    ctx.lineTo(headX - s * 0.08, headY - s * 0.42);
+    ctx.lineTo(headX + s * 0.04, headY - s * 0.2); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(headX + s * 0.12, headY - s * 0.18);
+    ctx.lineTo(headX + s * 0.08, headY - s * 0.42);
+    ctx.lineTo(headX + s * 0.22, headY - s * 0.19); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath(); ctx.moveTo(headX - s * 0.09, headY - s * 0.2);
+    ctx.lineTo(headX - s * 0.075, headY - s * 0.36);
+    ctx.lineTo(headX, headY - s * 0.21); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(headX + s * 0.09, headY - s * 0.19);
+    ctx.lineTo(headX + s * 0.075, headY - s * 0.36);
+    ctx.lineTo(headX + s * 0.18, headY - s * 0.2); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    const eyeY = headY - s * 0.02;
+    const eyeSp = s * 0.07;
+    ctx.fillStyle = '#2d2d2d';
+    ctx.beginPath(); ctx.ellipse(headX - eyeSp, eyeY, s * 0.035, s * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(headX + eyeSp, eyeY, s * 0.035, s * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.ellipse(headX - eyeSp, eyeY, s * 0.012, s * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(headX + eyeSp, eyeY, s * 0.012, s * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(headX - eyeSp + s * 0.015, eyeY - s * 0.02, s * 0.012, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(headX + eyeSp + s * 0.015, eyeY - s * 0.02, s * 0.012, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#ff8a8a';
+    ctx.beginPath(); ctx.moveTo(headX - s * 0.025, headY + s * 0.05);
+    ctx.lineTo(headX, headY + s * 0.08);
+    ctx.lineTo(headX + s * 0.025, headY + s * 0.05);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(headX, headY + s * 0.08);
+    ctx.lineTo(headX, headY + s * 0.11);
+    ctx.moveTo(headX, headY + s * 0.1);
+    ctx.quadraticCurveTo(headX - s * 0.05, headY + s * 0.12, headX - s * 0.08, headY + s * 0.1);
+    ctx.moveTo(headX, headY + s * 0.1);
+    ctx.quadraticCurveTo(headX + s * 0.05, headY + s * 0.12, headX + s * 0.08, headY + s * 0.1);
+    ctx.stroke();
+
+    if(!isGrooming){
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 0.6;
+      for(let w = -1; w <= 1; w += 2)
+        for(let wi = 0; wi < 3; wi++){
+          ctx.beginPath();
+          ctx.moveTo(headX + w * s * 0.03, headY + s * 0.04 + wi * s * 0.02);
+          ctx.lineTo(headX + w * s * 0.28, headY + s * 0.02 + wi * s * 0.035);
+          ctx.stroke();
+        }
+    }
+
+    ctx.restore();
+  };
+
+  let cats = [];
+  let sleepCount = 0;
+
+  function spawnAll(){
+    cats = [];
+    sleepCount = 0;
+    _platformsValid = false;
+    const platforms = getPlatforms();
+
+    function pickUnique(arr, used){
+      const pool = arr.filter(function(x){ return !used.includes(x); });
+      if(pool.length === 0) return arr[Math.floor(Math.random() * arr.length)];
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    const usedC = [], usedF = [];
+    const ground = platforms[platforms.length - 1];
+    const count = 3 + Math.floor(Math.random() * 5);
+    for(let k = 0; k < count; k++){
+      const hc = pickUnique(CAT_COLORS, usedC);
+      usedC.push(hc);
+      const fc = pickUnique(FUR_COLORS, usedF);
+      usedF.push(fc);
+      const cat = new Cat(hc, fc);
+      cat.x = ground.left + 15 + (ground.right - ground.left - 30) * ((k + 1) / (count + 1));
+      cat.y = ground.top - 50;
+      cat.dir = Math.random() < 0.5 ? 1 : -1;
+      cats.push(cat);
+    }
+
+    const sleepers = [];
+    let maxAttempts = 100;
+    while(sleepers.length < 2 && maxAttempts-- > 0){
+      const idx = Math.floor(Math.random() * cats.length);
+      if(!sleepers.includes(idx)){
+        sleepers.push(idx);
+        cats[idx].state = 'sleeping';
+        cats[idx].stateTimer = 20 + Math.random() * 10;
+        cats[idx].vx = 0;
+        sleepCount++;
+      }
+    }
+  }
+
+  let lastTime = 0;
+  let animFrameId = null;
+
+  function loop(time){
+    const dt = Math.min((time - lastTime) / 1000, 0.05);
+    lastTime = time;
+    ctx.clearRect(0, 0, c.width, c.height);
+    const platforms = getPlatforms();
+
+    for(let i = 0; i < cats.length; i++)
+      cats[i].update(dt, platforms, cats);
+
+    cats.sort(function(a, b){ return a.y !== b.y ? a.y - b.y : a.x - b.x; });
+
+    for(let i = 0; i < cats.length; i++)
+      cats[i].draw(ctx);
+
+    animFrameId = requestAnimationFrame(loop);
+  }
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden && animFrameId !== null) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    } else if (!document.hidden && animFrameId === null) {
+      lastTime = performance.now();
+      animFrameId = requestAnimationFrame(loop);
+    }
+  });
+
+  requestAnimationFrame(function(){
+    resize();
+    spawnAll();
+    animFrameId = requestAnimationFrame(loop);
+  });
+})();
+
+document.getElementById('avatar-card').addEventListener('click', function(){
+  fetch('/api/avatar', {method: 'POST'}).then(function(r){ return r.json(); }).then(function(d){
+    if(d.svg) document.querySelector('.avatar').innerHTML = d.svg;
+  }).catch(function(e){ console.warn('avatar refresh failed', e); });
+});
+
+const burnBtn = document.getElementById('burn-btn');
+const burnDrop = document.getElementById('burn-dropdown');
+burnBtn.addEventListener('click', function(e){
+  e.stopPropagation();
+  burnDrop.style.display = burnDrop.style.display === 'none' ? '' : 'none';
+});
+burnDrop.addEventListener('click', function(e){ e.stopPropagation(); });
+document.addEventListener('click', function(){
+  burnDrop.style.display = 'none';
+});
+
+function updateBurnBtn(){
+  const anyOn =
+    document.getElementById('stat-cpu').classList.contains('stat-on') ||
+    document.getElementById('stat-mem').classList.contains('stat-on') ||
+    document.getElementById('stat-url').classList.contains('stat-on');
+  const btn = document.getElementById('burn-btn');
+  btn.classList.toggle('active', anyOn);
+}
+
+function toggleStress(what){
+  const id = what === 'memory' ? 'mem' : what;
+  const pill = document.getElementById('ind-' + id).parentNode;
+  const stat = document.getElementById('stat-' + id);
+  pill.classList.toggle('active');
+  stat.classList.toggle('stat-on');
+  updateBurnBtn();
+  let url = '/api/stress/' + what;
+  if (what === 'url') url += '?url=' + encodeURIComponent(window.location.origin);
+  fetch(url, {method: 'POST'}).then(function(r){ return r.json(); }).then(function(d){
+    const on = d[what];
+    pill.classList.toggle('active', on);
+    stat.classList.toggle('stat-on', on);
+    updateBurnBtn();
+    pollStats();
+  }).catch(function(e){
+    console.warn('stress toggle failed', e);
+    pollStats();
+  });
+}
+
+document.querySelectorAll('.toggle-pill').forEach(function(pill){
+  pill.addEventListener('click', function(){
+    toggleStress(this.dataset.stress);
+  });
+});
+
+function fmtCount(n){
+  if(n < 1000) return String(n);
+  if(n < 1000000) return (n/1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return (n/1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+}
+function refreshUI(d){
+  document.getElementById('stat-cpu-val').textContent = d.cpu_percent + '%';
+  document.getElementById('stat-mem-val').textContent = d.memory_percent + '%';
+  document.getElementById('stat-url-val').textContent = d.url ? fmtCount(d.url_requests + d.url_fails) : '--';
+  document.getElementById('stat-cpu').classList.toggle('stat-on', d.cpu);
+  document.getElementById('stat-mem').classList.toggle('stat-on', d.memory);
+  document.getElementById('stat-url').classList.toggle('stat-on', d.url);
+  document.getElementById('ind-cpu').parentNode.classList.toggle('active', d.cpu);
+  document.getElementById('ind-mem').parentNode.classList.toggle('active', d.memory);
+  document.getElementById('ind-url').parentNode.classList.toggle('active', d.url);
+  updateBurnBtn();
+}
+
+let _statsSeq = 0;
+function pollStats(){
+  const seq = ++_statsSeq;
+  fetch('/api/stress').then(function(r){ return r.json(); }).then(function(d){
+    if(seq === _statsSeq) refreshUI(d);
+  }).catch(function(e){ /* silent */ });
+}
+pollStats();
+let _pollInterval = setInterval(function(){ pollStats(); }, 2000);
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden && _pollInterval !== null) {
+    clearInterval(_pollInterval);
+    _pollInterval = null;
+  } else if (!document.hidden && _pollInterval === null) {
+    pollStats();
+    _pollInterval = setInterval(function(){ pollStats(); }, 2000);
+  }
+});
+</script>
+</body>
+</html>
