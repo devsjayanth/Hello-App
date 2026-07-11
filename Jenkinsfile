@@ -6,16 +6,16 @@ pipeline {
         GIT_URL         = 'https://github.com/devsjayanth/Hello-App.git'
         GIT_CRED        = 'github-cred'       
         SONAR_CRED      = 'sonar-cred'        
-        HARBOR_URL      = '10.0.2.49:80'      
+        HARBOR_URL      = '10.0.2.47:80'      
         HARBOR_CRED     = 'harbor-cred'       
         APP_NAME        = 'hello-app'         
         APP_PORT        = '9001'              
         APP_INTERNAL    = '8000'              
         DEV_SERVER      = 'dev-server'        
-        GITOPS_REPO     = 'https://github.com/devsjayanth/Hello-App-GitOps.git'
+        GITOPS_REPO     = 'https://github.com/devsjayanth/Hello-App-Mongo-GitOps.git'
         GITOPS_BRANCH   = 'main'
         GITOPS_CRED     = 'github-cred'       
-        MANIFEST_PATH   = 'k8s/'
+        MANIFEST_PATH   = 'k8s/deployment.yml'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         IMAGE_LATEST    = "latest"
         
