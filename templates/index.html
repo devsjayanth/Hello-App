@@ -1,9 +1,4 @@
-{% set url_host = request.url.hostname %}
-{% if url_host in ('0.0.0.0', 'localhost', '127.0.0.1') or request.url.scheme == 'https' %}
 {% set full_url = (request.url.replace(query='') | string()).rstrip('/') ~ '/' %}
-{% else %}
-{% set full_url = (request.url.replace(query='', scheme='https') | string()).rstrip('/') ~ '/' %}
-{% endif %}
 <!doctype html>
 <html lang=en>
 <head>
