@@ -1,26 +1,41 @@
 pipeline {
     agent { label 'jenkins-agent' }
 
+    triggers {
+        githubPush()
+    }
+
     environment {
-        // ────────────────────────────────────────────────
+        // ──────── Source Code ────────
         GIT_URL         = 'https://github.com/devsjayanth/Hello-App.git'
-        GIT_CRED        = 'github-cred'       
-        SONAR_CRED      = 'sonar-cred'        
-        DOCKERHUB_USER  = 'devsjayanth'       
-        DOCKERHUB_CRED  = 'dockerhub-cred'    
-        APP_NAME        = 'hello-app-mongo'         
-        APP_PORT        = '9001'              
-        APP_INTERNAL    = '8000'              
-        DEV_SERVER      = 'dev-server-cred'        
-        GITOPS_REPO     = 'https://github.com/devsjayanth/Hello-App-Mongo-GitOps.git'
-        GITOPS_BRANCH   = 'main'
-        GITOPS_CRED     = 'github-cred'       
-        MANIFEST_PATH   = 'k8s/deployment.yml'
+        GIT_CRED        = 'github-cred'
+
+        // ──────── Quality ────────
+        SONAR_CRED      = 'sonar-cred'
+
+        // ──────── Docker ────────
+        DOCKERHUB_USER  = 'devsjayanth'
+        DOCKERHUB_CRED  = 'dockerhub-cred'
+        IMAGE_NAME      = "${DOCKERHUB_USER}/${APP_NAME}"
         IMAGE_TAG       = "${BUILD_NUMBER}"
         IMAGE_LATEST    = "latest"
-        
-        IMAGE_NAME      = "${DOCKERHUB_USER}/${APP_NAME}"
-        // ────────────────────────────────────────────────
+
+        // ──────── Application ────────
+        APP_NAME           = 'hello-app-mongo'
+        APP_CONTAINER_PORT = '8000'
+
+        // ──────── Dev Server ────────
+        DEV_SERVER         = '10.0.2.154'
+        DEV_SERVER_CRED    = 'dev-server-cred'
+        DEV_APP_PORT       = '9001'
+
+        // ──────── GitOps / ArgoCD ────────
+        GITOPS_REPO     = 'https://github.com/devsjayanth/Hello-App-Mongo-GitOps.git'
+        GITOPS_BRANCH   = 'main'
+        GITOPS_CRED     = 'github-cred'
+        MANIFEST_PATH   = 'k8s/hello-app-deployment.yml'
+        INGRESS_PATH    = 'k8s/hello-app-ingress.yml'
+        LB_IP           = 'REPLACE_WITH_HAPROXY_EIP'
     }
 
     stages {
@@ -84,26 +99,37 @@ pipeline {
 
         stage('Deploy to Dev Server') {
             steps {
-                sh """
-                    scp docker-compose-ci.yml ${DEV_SERVER}:~/docker-compose-ci.yml
-                    ssh ${DEV_SERVER} '
-                        cd ~
-                        docker compose -f docker-compose-ci.yml pull
-                        docker compose -f docker-compose-ci.yml up -d --remove-orphans
-                        docker image prune -f
-                    '"""
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: DEV_SERVER_CRED,
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
+                    sh """
+                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=no \$SSH_USER@${DEV_SERVER} '
+                            set -e
+                            docker stop hello-app 2>/dev/null || true
+                            docker rm hello-app 2>/dev/null || true
+
+                            docker run -d --name hello-app --restart unless-stopped --init \
+                              -p ${DEV_APP_PORT}:${APP_CONTAINER_PORT} \
+                              -e PORT=${APP_CONTAINER_PORT} -e LOG_LEVEL=INFO -e DEBUG=false -e FORWARDED_ALLOW_IPS=* \
+                              ${IMAGE_NAME}:${IMAGE_TAG}
+
+                            docker image prune -f
+                        '"""
+                }
             }
         }
 
         stage('Health Check') {
             steps {
-                sh """ssh ${DEV_SERVER} '
-                    for i in \$(seq 1 12); do
-                        curl -sf http://127.0.0.1:${APP_PORT}/ && exit 0
-                        sleep 5
-                    done
-                    exit 1
-                '"""
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: DEV_SERVER_CRED,
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
+                    sh "sleep 5 && ssh -i \$SSH_KEY -o StrictHostKeyChecking=no \$SSH_USER@${DEV_SERVER} curl -sf http://127.0.0.1:${DEV_APP_PORT}/"
+                }
             }
         }
 
@@ -128,9 +154,10 @@ pipeline {
                             git clone ${repoUrl} gitops
                             cd gitops
                             sed -i 's|image:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|' ${MANIFEST_PATH}
+                            sed -i 's|host: .*|host: \"${LB_IP}\"|' ${INGRESS_PATH}
                             git config user.name 'Jenkins'
                             git config user.email 'jenkins@devops'
-                            git add ${MANIFEST_PATH}
+                            git add ${MANIFEST_PATH} ${INGRESS_PATH}
                             git commit -m 'deploy: bump ${APP_NAME} to ${IMAGE_TAG}'
                             git push
                         """
